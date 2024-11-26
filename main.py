@@ -51,7 +51,7 @@ K512 = [
 ]
 
 
-# Вспомогательные функции
+# циклический сдвиг вправо для 32-битного значения.
 def right_rotate(value, amount):
     return ((value >> amount) | (value << (32 - amount))) & 0xFFFFFFFF
 
@@ -65,27 +65,27 @@ def sha256(message):
 
     # Обработка сообщения
     message_byte_len = len(message)
-    message_bit_len = message_byte_len * 8
-    message += b'\x80'
-    message += b'\x00' * ((56 - (message_byte_len + 1) % 64) % 64)
+    message_bit_len = message_byte_len * 8 #вычисляем длину входного сообщения в байтах и переводим её в биты
+    message += b'\x80' #добавляем бит 1 (в виде байта 0x80)
+    message += b'\x00' * ((56 - (message_byte_len + 1) % 64) % 64) #добавляем нули, чтобы длина сообщения стала кратной 512 битам
     message += struct.pack('>Q', message_bit_len)
 
-    for i in range(0, len(message), 64):
-        chunk = message[i:i + 64]
-        w = list(struct.unpack('>16L', chunk)) + [0] * 48
+    for i in range(0, len(message), 64): # разбиваем сообщение на блоки по 512 бит
+        chunk = message[i:i + 64] # извлекаем блок для проверки
+        w = list(struct.unpack('>16L', chunk)) + [0] * 48 #массив,торый содержит 64 значения.
 
         for j in range(16, 64):
-            s0 = right_rotate(w[j - 15], 7) ^ right_rotate(w[j - 15], 18) ^ (w[j - 15] >> 3)
-            s1 = right_rotate(w[j - 2], 17) ^ right_rotate(w[j - 2], 19) ^ (w[j - 2] >> 10)
+            s0 = right_rotate(w[j - 15], 7) ^ right_rotate(w[j - 15], 18) ^ (w[j - 15] >> 3) #сдвиг
+            s1 = right_rotate(w[j - 2], 17) ^ right_rotate(w[j - 2], 19) ^ (w[j - 2] >> 10) #сдвиг
             w[j] = (w[j - 16] + s0 + w[j - 7] + s1) & 0xFFFFFFFF
 
         a, b, c, d, e, f, g, h0 = h
 
         for j in range(64):
-            S1 = right_rotate(e, 6) ^ right_rotate(e, 11) ^ right_rotate(e, 25)
+            S1 = right_rotate(e, 6) ^ right_rotate(e, 11) ^ right_rotate(e, 25) #сдвиг
             ch = (e & f) ^ (~e & g)
             temp1 = (h0 + S1 + ch + K256[j] + w[j]) & 0xFFFFFFFF
-            S0 = right_rotate(a, 2) ^ right_rotate(a, 13) ^ right_rotate(a, 22)
+            S0 = right_rotate(a, 2) ^ right_rotate(a, 13) ^ right_rotate(a, 22) #сдвиг
             maj = (a & b) ^ (a & c) ^ (b & c)
             temp2 = (S0 + maj) & 0xFFFFFFFF
 
@@ -98,9 +98,9 @@ def sha256(message):
             b = a
             a = (temp1 + temp2) & 0xFFFFFFFF
 
-        h = [(x + y) & 0xFFFFFFFF for x, y in zip(h, [a, b, c, d, e, f, g, h0])]
+        h = [(x + y) & 0xFFFFFFFF for x, y in zip(h, [a, b, c, d, e, f, g, h0])] # обновляем массив хеш-значений
 
-    return b''.join(struct.pack('>L', i) for i in h)
+    return b''.join(struct.pack('>L', i) for i in h) #объединяем все хеш значения в байтовую строку
 
 
 def sha512(message):
